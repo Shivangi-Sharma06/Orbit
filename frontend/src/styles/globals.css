@@ -1,0 +1,32 @@
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #0d0f12;
+  color: #e6edf3;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.mantine-AppShell-navbar {
+  background: #161a1f;
+  border-color: #252a32;
+}
+
+.mantine-Paper-root,
+.mantine-Table-table {
+  --paper-bg: #161a1f;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.leaflet-container {
+  min-height: 520px;
+  width: 100%;
+  background: #161a1f;
+}

@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum DeviceStatus {
+  UNCLAIMED
+  CLAIMED
+  ACTIVE
+  UNBOUND
+  INACTIVE
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  role         Role           @default(USER)
+  createdAt    DateTime       @default(now())
+  devices      Device[]
+  tokens       RefreshToken[]
+}
+
+model Device {
+  id             String         @id @default(uuid())
+  deviceId       String         @unique
+  activationCode String         @unique
+  qrCodeBase64   String
+  status         DeviceStatus   @default(UNCLAIMED)
+  ownerId        String?
+  owner          User?          @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  claimedAt      DateTime?
+  lastSeen       DateTime?
+  createdAt      DateTime       @default(now())
+  locations      Location[]
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  altitude  Float?
+  speed     Float?
+  battery   Int?
+  timestamp DateTime @default(now())
+
+  @@index([deviceId, timestamp])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+}
