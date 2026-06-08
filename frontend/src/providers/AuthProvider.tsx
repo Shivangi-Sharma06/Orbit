@@ -25,8 +25,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     const savedToken = localStorage.getItem("accessToken");
-    if (savedUser) setUser(JSON.parse(savedUser));
-    if (savedToken) setAccessToken(savedToken);
+    try {
+      if (savedUser) setUser(JSON.parse(savedUser));
+      if (savedToken) setAccessToken(savedToken);
+    } catch {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+    }
     setReady(true);
   }, []);
 
@@ -49,7 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout: async () => {
         const refreshToken = localStorage.getItem("refreshToken");
         if (refreshToken) await api.post("/api/auth/logout", { refreshToken }).catch(() => undefined);
-        localStorage.clear();
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
         setUser(null);
         setAccessToken(null);
         router.push("/login");

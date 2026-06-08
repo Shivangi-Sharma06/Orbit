@@ -14,7 +14,20 @@ import type { Device } from "@/lib/types";
 function codeFromToken(token: string) {
   const normalized = token.replaceAll("-", "+").replaceAll("_", "/");
   const parsed = JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")));
-  return parsed.activationCode as string;
+  if (!parsed || typeof parsed.activationCode !== "string") throw new Error("Invalid claim QR");
+  return parsed.activationCode;
+}
+
+function tokenFromScan(text: string) {
+  try {
+    return new URL(text).searchParams.get("token");
+  } catch {
+    return text.includes("token=") ? new URL(`http://localhost/?${text.split("?").at(-1)}`).searchParams.get("token") : text;
+  }
+}
+
+function notifyClaimError(error: unknown) {
+  notifications.show({ color: "red", message: error instanceof Error ? error.message : "Claim failed" });
 }
 
 function ClaimContent() {
@@ -25,13 +38,18 @@ function ClaimContent() {
   const [loading, setLoading] = useState(false);
 
   async function claim(value = code) {
+    const activationCode = value.trim().toUpperCase();
+    if (!activationCode) {
+      notifications.show({ color: "red", message: "Enter an activation code" });
+      return;
+    }
     setLoading(true);
     try {
-      const device = unwrap<Device>(await api.post("/api/devices/claim", { activationCode: value.trim().toUpperCase() }));
+      const device = unwrap<Device>(await api.post("/api/devices/claim", { activationCode }));
       setClaimed(device);
       notifications.show({ color: "green", message: "Device claimed" });
     } catch (error) {
-      notifications.show({ color: "red", message: error instanceof Error ? error.message : "Claim failed" });
+      notifyClaimError(error);
     } finally {
       setLoading(false);
     }
@@ -40,18 +58,25 @@ function ClaimContent() {
   useEffect(() => {
     const token = search.get("token");
     if (token) {
-      const decoded = codeFromToken(token);
-      setCode(decoded);
-      claim(decoded);
+      try {
+        const decoded = codeFromToken(token);
+        setCode(decoded);
+        claim(decoded);
+      } catch (error) {
+        notifyClaimError(error);
+      }
     }
   }, []);
 
   useEffect(() => {
     scannerRef.current = new Html5QrcodeScanner("qr-reader", { fps: 8, qrbox: { width: 250, height: 250 } }, false);
     scannerRef.current.render((text) => {
-      const url = new URL(text);
-      const token = url.searchParams.get("token");
-      if (token) claim(codeFromToken(token));
+      try {
+        const token = tokenFromScan(text);
+        claim(token ? codeFromToken(token) : text);
+      } catch (error) {
+        notifyClaimError(error);
+      }
     }, () => undefined);
     return () => { scannerRef.current?.clear().catch(() => undefined); };
   }, []);

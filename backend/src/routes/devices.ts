@@ -67,7 +67,7 @@ devicesRouter.get(
 devicesRouter.post(
   "/claim",
   asyncHandler(async (req, res) => {
-    const { activationCode } = z.object({ activationCode: z.string().length(16) }).parse(req.body);
+    const { activationCode } = z.object({ activationCode: z.string().trim().toUpperCase().length(16) }).parse(req.body);
     const device = await prisma.device.findUnique({ where: { activationCode } });
     if (!device || device.status !== "UNCLAIMED") return fail(res, "Activation code is invalid or already claimed", 400);
     const claimed = await prisma.device.update({

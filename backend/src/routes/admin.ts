@@ -12,7 +12,7 @@ adminRouter.use(requireAuth, requireAdmin);
 adminRouter.post(
   "/devices/create-bulk",
   asyncHandler(async (req, res) => {
-    const { count } = z.object({ count: z.number().int().min(1).max(100) }).parse(req.body);
+    const { count } = z.object({ count: z.coerce.number().int().min(1).max(100) }).parse(req.body);
     const devices = [];
     for (let i = 0; i < count; i += 1) devices.push(await createDeviceRecord());
     return ok(res, devices, 201);

@@ -10,6 +10,7 @@
     "lint": "tsc --noEmit",
     "seed": "tsx prisma/seed.ts",
     "prisma:generate": "prisma generate",
+    "db:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
